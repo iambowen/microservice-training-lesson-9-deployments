@@ -176,6 +176,46 @@
                 ]
             }
         },
+        "NATEIP1": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+        "NATEIP2": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+        "NatGateway1": {
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NATEIP1",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Ref": "SubnetPrivate1"
+                }
+            }
+        },
+        "NatGateway2": {
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NATEIP2",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Ref": "SubnetPrivate2"
+                }
+            }
+        },
         "NetworkAclPrivate": {
             "Type": "AWS::EC2::NetworkAcl",
             "Properties": {
@@ -258,6 +298,30 @@
                 "DestinationCidrBlock": "0.0.0.0/0",
                 "GatewayId": {
                     "Ref": "InternetGateway"
+                }
+            }
+        },
+        "PrivateRoute1": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "RouteTablePrivate1"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NatGatewayId": {
+                    "Ref": "NatGateway1"
+                }
+            }
+        },
+        "PrivateRoute2": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "RouteTablePrivate2"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NatGatewayId": {
+                    "Ref": "NatGateway2"
                 }
             }
         },
