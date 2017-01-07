@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  loadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for ciao
+      VpcId: vpc-f6a76c92
+      SecurityGroupIngress:
+      - FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+  loadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Subnets:
+      - subnet-d7c254b3
+      - subnet-90d866e6
+      SecurityGroups:
+      - Ref: loadBalancerSecurityGroup
+      Listeners:
+      - Protocol: HTTP
+        LoadBalancerPort: 80
+        InstancePort: 80
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: 2
+        UnhealthyThreshold: 4
+        Interval: 10
+        Timeout: 8
+      CrossZone: true
+      ConnectionDrainingPolicy:
+        Enabled: true
+        Timeout: 30
+  instancesSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for ciao
+      VpcId: vpc-f6a76c92
+      SecurityGroupIngress:
+      - FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+        SourceSecurityGroupId:
+          Ref: loadBalancerSecurityGroup
+  iamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/application/"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: PolicyName
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: elasticloadbalancing:DescribeInstanceHealth
+            Resource: "*"
+  iamInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: iamRole
+  autoScalingGroup:
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT10M
+      AutoScalingCreationPolicy:
+        MinSuccessfulInstancesPercent: 100
+    UpdatePolicy:
+      AutoScalingScheduledAction:
+        IgnoreUnmodifiedGroupSizeProperties: false
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      Cooldown: 120
+      HealthCheckGracePeriod: 300
+      HealthCheckType: ELB
+      LaunchConfigurationName:
+        Ref: launchConfiguration
+      LoadBalancerNames:
+      - Ref: loadBalancer
+      MinSize: 1
+      MaxSize: 1
+      VPCZoneIdentifier:
+      - subnet-d0c254b4
+      - subnet-93d866e5
+      MetricsCollection:
+      - Granularity: 1Minute
+  launchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      IamInstanceProfile:
+        Ref: iamInstanceProfile
+      ImageId: ami-8ed6eaed
+      AssociatePublicIpAddress: false
+      InstanceType: t2.micro
+      InstanceMonitoring: true
+      SecurityGroups:
+      - Ref: instancesSecurityGroup
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+          - "\n"
+          - - "#!/bin/bash -eu"
+            - ''
+            - test -w /dev/console || sleep 5
+            - exec > >(tee /dev/console) 2>&1
+            - ''
+            - RESOURCE_STATUS=1
+            - function signal_stack
+            - "{"
+            - "  echo; echo --- Signalling status=$RESOURCE_STATUS"
+            - "  /usr/local/bin/cfn-signal -e $RESOURCE_STATUS \\"
+            - "    --stack ciao --region ap-southeast-2 \\"
+            - "    --resource autoScalingGroup"
+            - "}"
+            - ''
+            - trap signal_stack EXIT
+            - ''
+            - cat /etc/resolv.conf;
+            - docker run -d --name ciao -p 80:80 iambowen/ciao:alpine
+            - docker ps
+            - ''
+            - echo; echo --- SUCCESS
+            - RESOURCE_STATUS=0
+            - ''
+Outputs:
+  LoadBalancerAddress:
+    Value:
+      Fn::GetAtt:
+      - loadBalancer
+      - DNSName
+  IamRoleArn:
+    Value:
+      Fn::GetAtt:
+      - iamRole
+      - Arn

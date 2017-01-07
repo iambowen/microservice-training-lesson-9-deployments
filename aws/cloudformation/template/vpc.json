@@ -22,11 +22,6 @@
             "Default": "vpc.internal",
             "Description": "The domain name to use"
         },
-        "EnableDirectConnectSupport": {
-            "Type": "String",
-            "Default": "false",
-            "Description": "If true, the EQX DNS resolvers are sent via DHCP instead of the AWS ones (needed for DirectConnect)"
-        },
         "VpcCidrBlock": {
             "Type": "String",
             "Default": "10.0.0.0/16",
@@ -135,7 +130,7 @@
                     "Ref": "DomainName"
                 },
                 "DomainNameServers": [
-                    "AmazonProvidedDns"
+                    "AmazonProvidedDns", "8.8.8.8"
                 ],
                 "Tags": [
                     {

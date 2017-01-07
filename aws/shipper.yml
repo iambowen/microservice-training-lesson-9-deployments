@@ -1,0 +1,37 @@
+---
+app:
+  image: 'iambowen/ciao:alpine'
+  name: ciao
+  port: 80
+  health_check:
+    grace_period: 300
+    path: "/"
+    healthy_threshold: 2
+    unhealthy_threshold: 4
+    interval: 10
+    timeout: 8
+aws:
+  region: ap-southeast-2
+  vpc: vpc-f6a76c92
+  instances:
+    min: 1
+    max: 1
+    type: t1.micro
+    ami_for_region:
+      ap-southeast-2: ami-8ed6eaed
+    subnets:
+      - subnet-d0c254b4
+      - subnet-93d866e5  
+  auto_scaling:
+    timeout: PT10M
+  stack:
+    create_timeout: PT30M
+  load_balancer:
+    subnets:
+      - subnet-d7c254b3
+      - subnet-90d866e6
+    scheme: internet-facing
+    listeners:
+      80:
+        to: 80
+        protocol: http

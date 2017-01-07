@@ -16,10 +16,6 @@
     "ParameterValue": "vpc.internal"
   },
   {
-    "ParameterKey": "EnableDirectConnectSupport",
-    "ParameterValue": "false"
-  },
-  {
     "ParameterKey": "SubnetPrivate1CidrBlock",
     "ParameterValue": "10.0.3.0/24"
   },

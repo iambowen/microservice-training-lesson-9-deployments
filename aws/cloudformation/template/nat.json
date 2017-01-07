@@ -1,0 +1,157 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Two NAT gateways (one per AZ), gets parameters from VPC stack with Fn::ImportValue",
+    "Parameters": {
+        "VpcName": {
+            "Type": "String",
+            "Default": "vpc-20170108",
+            "Description": "The name of the VPC stack, used to build out parameter imports"
+        }
+    },
+    "Resources": {
+        "NatEip1": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+        "NatEip2": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+        "NatGw1": {
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NatEip1",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Fn::ImportValue": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                {
+                                    "Ref": "VpcName"
+                                },
+                                "-SUBNETPUBLIC1"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "NatGw2": {
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NatEip2",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Fn::ImportValue": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                {
+                                    "Ref": "VpcName"
+                                },
+                                "-SUBNETPUBLIC2"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "RoutePrivate1": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Fn::ImportValue": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                {
+                                    "Ref": "VpcName"
+                                },
+                                "-RTBPRIVATE1"
+                            ]
+                        ]
+                    }
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NatGatewayId": {
+                    "Ref": "NatGw1"
+                }
+            }
+        },
+        "RoutePrivate2": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Fn::ImportValue": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                {
+                                    "Ref": "VpcName"
+                                },
+                                "-RTBPRIVATE2"
+                            ]
+                        ]
+                    }
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NatGatewayId": {
+                    "Ref": "NatGw2"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "NatEip1": {
+            "Description": "The Elastic IP of the 1st NAT Gateway",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "VpcName"
+                            },
+                            "-NATEIP1"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "NatEip1"
+            }
+        },
+        "NatEip2": {
+            "Description": "The Elastic IP of the 2nd NAT Gateway",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "VpcName"
+                            },
+                            "-NATEIP2"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "NatEip2"
+            }
+        }
+    }
+}
