@@ -1,0 +1,997 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "A vpc template",
+    "Parameters": {
+        "AvailabilityZone1": {
+            "Type": "String",
+            "Default": "ap-southeast-2a",
+            "Description": "The first availability zone"
+        },
+        "AvailabilityZone2": {
+            "Type": "String",
+            "Default": "ap-southeast-2b",
+            "Description": "The second availability zone"
+        },
+        "AvailabilityZone3": {
+            "Type": "String",
+            "Default": "",
+            "Description": "The third availability zone"
+        },
+        "DomainName": {
+            "Type": "String",
+            "Default": "vpc.internal",
+            "Description": "The domain name to use"
+        },
+        "EnableDirectConnectSupport": {
+            "Type": "String",
+            "Default": "false",
+            "Description": "If true, the EQX DNS resolvers are sent via DHCP instead of the AWS ones (needed for DirectConnect)"
+        },
+        "VpcCidrBlock": {
+            "Type": "String",
+            "Default": "10.0.0.0/16",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x.",
+            "Description": "The IP address range for the VPC",
+            "MaxLength": "18",
+            "MinLength": "9"
+        },
+        "SubnetPublic1CidrBlock": {
+            "Type": "String",
+            "Default": "10.0.0.0/24",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x.",
+            "Description": "The public subnet in the first availability zone",
+            "MaxLength": "18",
+            "MinLength": "9"
+        },
+        "SubnetPublic2CidrBlock": {
+            "Type": "String",
+            "Default": "10.0.1.0/24",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x.",
+            "Description": "The public subnet in the second availability zone",
+            "MaxLength": "18",
+            "MinLength": "9"
+        },
+        "SubnetPrivate1CidrBlock": {
+            "Type": "String",
+            "Default": "10.0.3.0/24",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x.",
+            "Description": "The private subnet in the first availability zone",
+            "MaxLength": "18",
+            "MinLength": "9"
+        },
+        "SubnetPrivate2CidrBlock": {
+            "Type": "String",
+            "Default": "10.0.4.0/24",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x.",
+            "Description": "The private subnet in the second availability zone",
+            "MaxLength": "18",
+            "MinLength": "9"
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups": [
+                {
+                    "Label": {
+                        "default": "VPC Configuration"
+                    },
+                    "Parameters": [
+                        "Name",
+                        "AvailabilityZone1",
+                        "AvailabilityZone2"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Network Configuration"
+                    },
+                    "Parameters": [
+                        "VpcCidrBlock",
+                        "SubnetPublic1CidrBlock",
+                        "SubnetPublic2CirBlock",
+                        "SubnetPrivate1CidrBlock",
+                        "SubnetPrivate2CidrBlock"
+                    ]
+                }
+            ],
+            "ParameterLabels": {
+                "AvailabilityZone1": {
+                    "default": "Availability Zone 1"
+                },
+                "AvailabilityZone2": {
+                    "default": "Availability Zone 2"
+                },
+                "AvailabilityZone3": {
+                    "default": "Availability Zone 3"
+                },
+                "VpcCidrBlock": {
+                    "default": "VPC CIDR Block"
+                },
+                "SubnetPublic1CidrBlock": {
+                    "default": "Public Subnet 1 CIDR Block"
+                },
+                "SubnetPublic2CidrBlock": {
+                    "default": "Public Subnet 2 CIDR Block"
+                },
+                "SubnetPrivate1CidrBlock": {
+                    "default": "Private Subnet 1 CIDR Block"
+                },
+                "SubnetPrivate2CidrBlock": {
+                    "default": "Private Subnet 2 CIDR Block"
+                }
+            }
+        }
+    },
+    "Resources": {
+        "DhcpOptions": {
+            "Type": "AWS::EC2::DHCPOptions",
+            "Properties": {
+                "DomainName": {
+                    "Ref": "DomainName"
+                },
+                "DomainNameServers": [
+                    "AmazonProvidedDns"
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-dhcp-options"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-igw"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "NetworkAclPrivate": {
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-acl-private"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "NetworkAclPublic": {
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-acl-public"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "NetworkAclServices": {
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-acl-services"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "RoutePublicDefault": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "VpcGatewayAttachment",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "RouteTablePublic"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        },
+        "RouteTablePrivate1": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-rtb-private/1"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "RouteTablePrivate2": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-rtb-private/2"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "RouteTablePublic": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-rtb-public"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "SubnetPrivate1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "AvailabilityZone": {
+                    "Ref": "AvailabilityZone1"
+                },
+                "CidrBlock": {
+                    "Ref": "SubnetPrivate1CidrBlock"
+                },
+                "MapPublicIpOnLaunch": "False",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-private/1"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "SubnetPrivate1NetworkAclAssociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPrivate1"
+                },
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPrivate"
+                }
+            }
+        },
+        "SubnetPrivate1RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPrivate1"
+                },
+                "RouteTableId": {
+                    "Ref": "RouteTablePrivate1"
+                }
+            }
+        },
+        "SubnetPrivate2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "AvailabilityZone": {
+                    "Ref": "AvailabilityZone2"
+                },
+                "CidrBlock": {
+                    "Ref": "SubnetPrivate2CidrBlock"
+                },
+                "MapPublicIpOnLaunch": "False",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-private/2"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "SubnetPrivate2NetworkAclAssociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPrivate2"
+                },
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPrivate"
+                }
+            }
+        },
+        "SubnetPrivate2RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPrivate2"
+                },
+                "RouteTableId": {
+                    "Ref": "RouteTablePrivate2"
+                }
+            }
+        },
+        "SubnetPrivateAllowAllFromInternal": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "VpcCidrBlock"
+                },
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPrivate"
+                },
+                "Protocol": -1,
+                "RuleAction": "allow",
+                "RuleNumber": 100
+            }
+        },
+        "SubnetPrivateAllowAllToAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": true,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPrivate"
+                },
+                "Protocol": "-1",
+                "RuleAction": "allow",
+                "RuleNumber": 100
+            }
+        },
+        "SubnetPrivateAllowEphemeralTcpFromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPrivate"
+                },
+                "Protocol": 6,
+                "PortRange": {
+                    "From": 1024,
+                    "To": 65535
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 110
+            }
+        },
+        "SubnetPrivateAllowEphemeralUdpFromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPrivate"
+                },
+                "Protocol": 17,
+                "PortRange": {
+                    "From": 1024,
+                    "To": 65535
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 120
+            }
+        },
+        "SubnetPrivateAllowICMPFromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPrivate"
+                },
+                "Protocol": 1,
+                "Icmp": {
+                    "Code": "-1",
+                    "Type": "-1"
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 130
+            }
+        },
+        "SubnetPublic1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "AvailabilityZone": {
+                    "Ref": "AvailabilityZone1"
+                },
+                "CidrBlock": {
+                    "Ref": "SubnetPublic1CidrBlock"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-public/1"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "SubnetPublic1NetworkAclAssociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPublic1"
+                },
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                }
+            }
+        },
+        "SubnetPublic1RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPublic1"
+                },
+                "RouteTableId": {
+                    "Ref": "RouteTablePublic"
+                }
+            }
+        },
+        "SubnetPublic2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "AvailabilityZone": {
+                    "Ref": "AvailabilityZone2"
+                },
+                "CidrBlock": {
+                    "Ref": "SubnetPublic2CidrBlock"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    "-public/2"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "SubnetPublic2NetworkAclAssociation": {
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPublic2"
+                },
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                }
+            }
+        },
+        "SubnetPublic2RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "SubnetPublic2"
+                },
+                "RouteTableId": {
+                    "Ref": "RouteTablePublic"
+                }
+            }
+        },
+        "SubnetPublicAllowAllFromInternal": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "VpcCidrBlock"
+                },
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                },
+                "Protocol": "-1",
+                "RuleAction": "allow",
+                "RuleNumber": 100
+            }
+        },
+        "SubnetPublicAllowAllToAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": true,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                },
+                "Protocol": "-1",
+                "RuleAction": "allow",
+                "RuleNumber": 100
+            }
+        },
+        "SubnetPublicAllowEphemeralTcpFromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                },
+                "Protocol": 6,
+                "PortRange": {
+                    "From": 1024,
+                    "To": 65535
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 110
+            }
+        },
+        "SubnetPublicAllowEphemeralUdpFromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                },
+                "Protocol": 17,
+                "PortRange": {
+                    "From": 1024,
+                    "To": 65535
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 120
+            }
+        },
+        "SubnetPublicAllowIcmpFromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                },
+                "Protocol": 1,
+                "Icmp": {
+                    "Code": "-1",
+                    "Type": "-1"
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 130
+            }
+        },
+        "SubnetPublicAllowPort443FromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                },
+                "Protocol": 6,
+                "PortRange": {
+                    "From": 443,
+                    "To": 443
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 140
+            }
+        },
+        "SubnetPublicAllowPort80FromAnywhere": {
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": false,
+                "NetworkAclId": {
+                    "Ref": "NetworkAclPublic"
+                },
+                "Protocol": 6,
+                "PortRange": {
+                    "From": 80,
+                    "To": 80
+                },
+                "RuleAction": "allow",
+                "RuleNumber": 500
+            }
+        },
+        "Vpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "VpcCidrBlock"
+                },
+                "EnableDnsSupport": true,
+                "EnableDnsHostnames": true,
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    },
+                    {
+                        "Key": "version",
+                        "Value": "rea-vpc-1.1.0"
+                    }
+                ]
+            }
+        },
+        "VpcDhcpOptionsAssociation": {
+            "Type": "AWS::EC2::VPCDHCPOptionsAssociation",
+            "Properties": {
+                "DhcpOptionsId": {
+                    "Ref": "DhcpOptions"
+                },
+                "VpcId": {
+                    "Ref": "Vpc"
+                }
+            }
+        },
+        "VpcGatewayAttachment": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "Vpc"
+                },
+                "InternetGatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "DefaultSecurityGroup": {
+            "Description": "The default security group",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-SECURITYGROUPDEFAULT"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Fn::GetAtt": [
+                    "Vpc",
+                    "DefaultSecurityGroup"
+                ]
+            }
+        },
+        "PrivateNetworkAcl": {
+            "Description": "The private ACL",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-ACLPRIVATE"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "NetworkAclPrivate"
+            }
+        },
+        "PublicNetworkAcl": {
+            "Description": "The public ACL",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-ACLPUBLIC"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "NetworkAclPublic"
+            }
+        },
+        "RouteTablePrivate1": {
+            "Description": "The routing table for private subnet 1",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-RTBPRIVATE1"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "RouteTablePrivate1"
+            }
+        },
+        "RouteTablePrivate2": {
+            "Description": "The routing table for private subnet 2",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-RTBPRIVATE2"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "RouteTablePrivate2"
+            }
+        },
+        "RouteTablePublic": {
+            "Description": "The routing table for public subnets",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-RTBPUB"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "RouteTablePublic"
+            }
+        },
+        "SubnetPrivate1": {
+            "Description": "The private subnet in the first availability zone",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-SUBNETPRIVATE1"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "SubnetPrivate1"
+            }
+        },
+        "SubnetPrivate2": {
+            "Description": "The private subnet in the second availability zone",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-SUBNETPRIVATE2"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "SubnetPrivate2"
+            }
+        },
+        "SubnetPublic1": {
+            "Description": "The public subnet in the first availability zone",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-SUBNETPUBLIC1"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "SubnetPublic1"
+            }
+        },
+        "SubnetPublic2": {
+            "Description": "The public subnet in the second availability zone",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-SUBNETPUBLIC2"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "SubnetPublic2"
+            }
+        },
+        "Vpc": {
+            "Description": "The ID of the created VPC",
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-VPC"
+                        ]
+                    ]
+                }
+            },
+            "Value": {
+                "Ref": "Vpc"
+            }
+        }
+    }
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "ParameterKey": "AvailabilityZone1",
+    "ParameterValue": "ap-southeast-2a"
+  },
+  {
+    "ParameterKey": "AvailabilityZone2",
+    "ParameterValue": "ap-southeast-2b"
+  },
+  {
+    "ParameterKey": "AvailabilityZone3",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "vpc.internal"
+  },
+  {
+    "ParameterKey": "EnableDirectConnectSupport",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "SubnetPrivate1CidrBlock",
+    "ParameterValue": "10.0.3.0/24"
+  },
+  {
+    "ParameterKey": "SubnetPrivate2CidrBlock",
+    "ParameterValue": "10.0.4.0/24"
+  },
+  {
+    "ParameterKey": "SubnetPublic1CidrBlock",
+    "ParameterValue": "10.0.0.0/24"
+  },
+  {
+    "ParameterKey": "SubnetPublic2CidrBlock",
+    "ParameterValue": "10.0.1.0/24"
+  },
+  {
+    "ParameterKey": "VpcCidrBlock",
+    "ParameterValue": "10.0.0.0/16"
+  }
+]
