@@ -49,13 +49,22 @@ Vagrant.configure("2") do |config|
     # Customize the amount of memory on the VM:
     vb.memory = "1024"
   end
-
+  ## config puppet with docker module ModuleName
+  #   puppet module install garethr/docker
+  # end
   config.vm.provision "shell", inline: <<-SHELL
     apt-get update
-    apt-get install docker.io -y
-    usermod -aG docker ubuntu
-    docker run -d -p 8088:80 iambowen/ciao:alpine
+    gem install puppet facter
+    gem install chef
   SHELL
+
+  # provision with shell for docker
+  # config.vm.provision "shell", inline: <<-SHELL
+  #   apt-get update
+  #   apt-get install docker.io -y
+  #   usermod -aG docker ubuntu
+  #   docker run -d -p 8088:80 iambowen/ciao:alpine
+  # SHELL
 
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "playbook.yml"
@@ -66,6 +75,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "puppet" do |puppet|
     puppet.manifests_path = "manifests"
     puppet.manifest_file = "ciao.pp"
+    puppet.module_path = './manifests/modules'
   end
 
   config.vm.provision "chef_solo" do |chef|
