@@ -1,0 +1,56 @@
+---
+- hosts: all
+  sudo: yes
+  user: vagrant
+  tasks:
+    # - name: preparations
+    #   apt:
+    #     name: apt-transport-https
+    #     state: present
+
+    # - name: preparations 
+    #   apt:
+    #     name: ca-certificates
+    #     state: present
+    
+
+    - name: add docker apt source certs
+      apt_key: 
+        keyserver: hkp://ha.pool.sks-keyservers.net:80
+        id: 58118E89F3A912897C070ADBF76221572C52609D
+
+    - name: add docker source list to system 
+      apt_repository: 
+        repo: "deb https://apt.dockerproject.org/repo ubuntu-trusty main"
+
+    - name: install docker on destination
+      apt: 
+        name: docker-engine 
+        state: latest  
+
+    - name: grant access for ubuntu to run docker
+      user: 
+        name: vagrant 
+        group: docker 
+        append: yes
+
+    - name: install python-pip
+      apt: 
+        name: python-pip
+        state: latest
+    
+    - name: install docker-py package
+      pip:
+        name: docker-py
+        state: latest
+
+    - name: running ciao app
+      docker_container: 
+        image: 'iambowen/ciao:alpine'
+        name: ciao
+        expose: 80
+        ports: 
+        - 8088:80
+        pull: true
+
+
