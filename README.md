@@ -32,9 +32,22 @@
 1. `cd chef`
 2. 运行 `vagrant up --provision-with chef`
 
+
+## cloudformation相关
+----
+
+1. 创建vpc, `aws cloudformation create-stack --stack-name vpc-20170108 --template-body file://aws/cloudformation/template/vpc.json --parameters file://aws/cloudformation/parameters/vpc-params.json`
+
+2. 创建应用, `aws cloudformation create-stack --stack-name  ciao --template-body  file://cloudformation/template/ciao.yml --capabilities CAPABILITY_IAM`
+
+3. immutable asg deployment `aws cloudformation update-stack --stack-name  ciao --template-body  file://cloudformation/template/ciao.yml --capabilities CAPABILITY_IAM`
+
 ## 说明
 ----
 1. ssh 到vagrant虚拟机，`vagrant ssh`
+
+
+
 
 ### 参考资料
 ---
@@ -49,3 +62,5 @@
 5. [Puppet Best Practices](http://dl.finebook.ir/book/61/14308.pdf)
 
 6. [RPM package example](https://github.com/iambowen/bbs_team_b/blob/master/bbs.spec)
+
+7. [bash my aws](https://github.com/realestate-com-au/bash-my-aws)

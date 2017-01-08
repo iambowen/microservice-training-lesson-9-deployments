@@ -131,7 +131,7 @@ Resources:
             - trap signal_stack EXIT
             - ''
             - cat /etc/resolv.conf;
-            - docker run -d --name ciao -p 80:80 iambowen/ciao:alpine
+            - docker run -d --name ciao -p 80:80  -e MESSAGE='Goodbye!' iambowen/ciao:alpine
             - docker ps
             - ''
             - echo; echo --- SUCCESS
