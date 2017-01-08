@@ -3,16 +3,15 @@
   sudo: yes
   user: vagrant
   tasks:
-    # - name: preparations
-    #   apt:
-    #     name: apt-transport-https
-    #     state: present
+    - name: preparations
+      apt:
+        name: apt-transport-https
+        state: present
 
-    # - name: preparations 
-    #   apt:
-    #     name: ca-certificates
-    #     state: present
-    
+    - name: preparations 
+      apt:
+        name: ca-certificates
+        state: present
 
     - name: add docker apt source certs
       apt_key: 
