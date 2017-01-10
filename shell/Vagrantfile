@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
+  config.vm.synced_folder ".", "/vagrant_data"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -57,7 +57,12 @@ Vagrant.configure("2") do |config|
    apt-get update
    apt-get install docker.io -y
    usermod -aG docker vagrant
-   docker run -d -p 8088:80 iambowen/ciao:alpine
+   apt-get install haproxy
+   cp /vagrant_data/etc/haproxy/haproxy.cfg  /etc/haproxy/haproxy.cfg 
+   sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+   docker run -d -p 8088:80 -e MESSAGE="Ciao from A" iambowen/ciao:alpine
+   docker run -d -p 8080:80 -e MESSAGE="Ciao from B" iambowen/ciao:alpine
+   service haproxy start
  SHELL
 
   #
